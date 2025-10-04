@@ -13,20 +13,22 @@ def nok(msg):  return {"ok": False, "msg": msg}
 def main():
     rm = ReplicaManager()
     ctx = zmq.Context()
-    rep = ctx.socket(zmq.REP); rep.bind(GA_REP)
+    rep = ctx.socket(zmq.REP)
+    rep.bind(GA_REP)
     print(f"[GA] REP en {GA_REP} | BD activa: {rm.active}")
 
     while True:
         req = json.loads(rep.recv_string())
-        op = req.get("op","").upper()
+        op = req.get("op", "").upper()
         try:
             conn = rm._conn()
             cur = conn.cursor()
 
             if op == "PRESTAR":
                 # Datos de entrada
-                isbn  = req["isbn"];  user = req["user"]
-                days  = int(req.get("days", 14))  # periodo de préstamo
+                isbn = req["isbn"]
+                user = req["user"]
+                days = int(req.get("days", 14))  # periodo de préstamo
 
                 # 1) disponibilidad
                 cur.execute("SELECT ejemplares_total, ejemplares_disponibles FROM libros WHERE isbn=%s FOR UPDATE", (isbn,))
@@ -37,7 +39,7 @@ def main():
                 if disp <= 0:
                     cur.close(); rep.send_json(nok("Sin ejemplares disponibles")); continue
 
-                # 2) aplicar préstamo (decrementar stock e insertar préstamo activo)
+                # 2) aplicar préstamo
                 cur.execute("UPDATE libros SET ejemplares_disponibles = ejemplares_disponibles - 1 WHERE isbn=%s", (isbn,))
                 cur.execute("""
                     INSERT INTO prestamos(isbn, usuario, fecha_prestamo, fecha_devolucion, renovaciones, estado)
@@ -48,16 +50,17 @@ def main():
                 rep.send_json(ok("Prestado"))
 
             elif op == "DEVOLVER":
-                isbn  = req["isbn"]; user = req["user"]
+                isbn = req["isbn"]
+                user = req["user"]
 
-                # 1) cerrar el préstamo activo más reciente del usuario para ese isbn
+                # 1) cerrar préstamo activo
                 cur.execute("""
                     UPDATE prestamos
                     SET estado='devuelto', fecha_devolucion=CURDATE()
                     WHERE isbn=%s AND usuario=%s AND estado='activo'
                     ORDER BY id DESC LIMIT 1
                 """, (isbn, user))
-                # 2) devolver al inventario (sin exceder total)
+                # 2) devolver al inventario
                 cur.execute("""
                     UPDATE libros
                     SET ejemplares_disponibles = LEAST(ejemplares_total, ejemplares_disponibles + 1)
@@ -68,10 +71,11 @@ def main():
                 rep.send_json(ok("Devolución aplicada"))
 
             elif op == "RENOVAR":
-                isbn  = req["isbn"]; user = req["user"]
-                days  = int(req.get("days", 7))
+                isbn = req["isbn"]
+                user = req["user"]
+                days = int(req.get("days", 7))
 
-                # 1) validar límite de renovaciones (máx. 2) en el préstamo activo
+                # 1) validar límite de renovaciones
                 cur.execute("""
                     SELECT id, renovaciones FROM prestamos
                     WHERE isbn=%s AND usuario=%s AND estado='activo'
@@ -96,7 +100,8 @@ def main():
                 rep.send_json(ok("Renovación aplicada"))
 
             else:
-                cur.close(); rep.send_json(nok("op inválida"))
+                cur.close()
+                rep.send_json(nok("Operación inválida"))
 
         except Error as e:
             rm.switch()

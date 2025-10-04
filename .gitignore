@@ -1,0 +1,89 @@
+# ===============================
+# PYTHON
+# ===============================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Entornos virtuales
+venv/
+.env/
+.env.bak/
+.venv/
+
+# Archivos de configuración temporales
+*.log
+*.pot
+*.pyproj
+*.pyo
+*.pyd
+
+# Archivos de bases de datos locales o temporales
+*.db
+*.sqlite3
+
+# Configuración y cachés de tests
+.pytest_cache/
+.tox/
+nosetests.xml
+coverage.xml
+*.cover
+htmlcov/
+
+# Archivos de paquetes
+build/
+dist/
+eggs/
+*.egg-info/
+*.egg
+
+# ===============================
+# VS CODE / IDEs
+# ===============================
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ===============================
+# SISTEMAS / WINDOWS / MAC
+# ===============================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ===============================
+# PERSONALIZADO PARA TU PROYECTO
+# ===============================
+
+# Archivos de datos generados por pruebas
+tests/__pycache__/
+tests/*.pyc
+
+# Archivos generados por pruebas locales o mock clients
+tests/test_*.py
+
+# Archivos de configuración locales (no subir tus credenciales)
+config.json
+*.env
+*.ini
+
+# Logs y backups
+logs/
+*.bak
+*.old
+*.tmp
+
+# Base de datos local
+db/datos_iniciales.csv
+db/*.sql~  # copias temporales de SQL
+
+# ===============================
+# PYCHARM / JETBRAINS (opcional)
+# ===============================
+.idea/
+*.iml
