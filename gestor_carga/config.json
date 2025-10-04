@@ -1,0 +1,16 @@
+{
+  "zmq": {
+    "gc_rep": "tcp://0.0.0.0:5555",
+    "gc_pub": "tcp://0.0.0.0:5556",
+    "actor_prestamo_rep": "tcp://127.0.0.1:5557",
+    "ga_rep": "tcp://127.0.0.1:5560"
+  },
+  "mysql": {
+    "primary": { "host": "127.0.0.1", "port": 3306, "user": "biblio", "password": "biblio123", "database": "biblioteca" },
+    "secondary": { "host": "127.0.0.1", "port": 3307, "user": "biblio", "password": "biblio123", "database": "biblioteca" }
+  },
+  "logs": {
+    "gc": "../logs/gc.csv",
+    "ps": "../logs/ps.csv"
+  }
+}
