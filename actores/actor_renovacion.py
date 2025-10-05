@@ -1,17 +1,32 @@
-import zmq
-from gestor_almacenamiento.gestor_db import GestorBD
+import zmq, json, os
 
-ctx = zmq.Context()
-sub = ctx.socket(zmq.SUB)
-sub.connect("tcp://localhost:5561")
-sub.setsockopt_string(zmq.SUBSCRIBE, "Renovacion")
+# Cargar configuración
+CFG = json.load(open(os.path.join(os.path.dirname(__file__), '..', 'gestor_carga', 'config.json'), 'r', encoding='utf-8'))
+GA_REP = CFG["zmq"]["ga_rep"]
+GC_PUB = CFG["zmq"]["gc_pub"]
 
-bd = GestorBD()
-print("[Actor Renovación] Escuchando tópico 'Renovacion'...")
+def main():
+    ctx = zmq.Context()
+    sub = ctx.socket(zmq.SUB)
+    sub.connect(GC_PUB)
+    sub.setsockopt_string(zmq.SUBSCRIBE, "Renovacion")
 
-while True:
-    msg = sub.recv_string()
-    _, isbn, usuario = msg.split('|')
-    print(f"Renovación recibida: {usuario} renueva {isbn}")
-    res = bd.renovar_libro(isbn, usuario)
-    print(res)
+    req = ctx.socket(zmq.REQ)
+    req.connect(GA_REP)
+
+    print("[Actor Renovación] Escuchando tópico 'Renovacion'...")
+
+    while True:
+        topic, msg_json = sub.recv_string().split(" ", 1)
+        msg = json.loads(msg_json)
+        print(f"Renovación recibida: {msg}")
+        isbn = msg["isbn"]
+        user = msg["user"]
+
+        data = {"op": "RENOVAR", "isbn": isbn, "user": user}
+        req.send_string(json.dumps(data))
+        res = req.recv_json()
+        print(f"Resultado: {res['msg']}")
+
+if __name__ == "__main__":
+    main()

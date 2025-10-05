@@ -1,17 +1,31 @@
-import zmq
-from gestor_almacenamiento.gestor_db import GestorBD
+import zmq, os, json
+CFG = json.load(open(os.path.join(os.path.dirname(__file__), '..', 'gestor_carga', 'config.json'), 'r', encoding='utf-8'))
 
-ctx = zmq.Context()
-socket = ctx.socket(zmq.REP)
-socket.bind("tcp://*:5560")
+GA_REP = CFG["zmq"]["ga_rep"]
+ACTOR_REP = CFG["zmq"]["actor_prestamo_rep"]
 
-bd = GestorBD()
+def main():
+    ctx = zmq.Context()
+    rep = ctx.socket(zmq.REP)
+    rep.bind(ACTOR_REP)
 
-print("[Actor Préstamo] Esperando solicitudes...")
+    req = ctx.socket(zmq.REQ)
+    req.connect(GA_REP)
 
-while True:
-    msg = socket.recv_string()
-    isbn, usuario = msg.split('|')
-    print(f"Solicitud de préstamo: {usuario} pide {isbn}")
-    respuesta = bd.prestar_libro(isbn, usuario)
-    socket.send_string(respuesta)
+    print(f"[Actor Préstamo] Esperando solicitudes en {ACTOR_REP} ...")
+
+    while True:
+        msg = rep.recv_json()
+        print(f"Solicitud recibida: {msg}")
+        isbn = msg["isbn"]
+        user = msg["user"]
+
+        data = {"op": "PRESTAR", "isbn": isbn, "user": user}
+        req.send_string(json.dumps(data))
+        res = req.recv_json()
+
+        print(f"Resultado: {res['msg']}")
+        rep.send_json(res)
+
+if __name__ == "__main__":
+    main()
