@@ -6,8 +6,20 @@
     "ga_rep": "tcp://127.0.0.1:5560"
   },
   "mysql": {
-    "primary": { "host": "127.0.0.1", "port": 3306, "user": "root", "password": "password", "database": "biblioteca" },
-    "secondary": { "host": "127.0.0.1", "port": 3306, "user": "root", "password": "password", "database": "biblioteca" }
+    "primary": { 
+      "host": "127.0.0.1", 
+      "port": 3306, 
+      "user": "root", 
+      "password": "Root_2025!", 
+      "database": "biblioteca_sede1" 
+    },
+    "secondary": { 
+      "host": "127.0.0.1", 
+      "port": 3307, 
+      "user": "root", 
+      "password": "Root_2025!", 
+      "database": "biblioteca_sede2" 
+    }
   },
   "logs": {
     "gc": "../logs/gc.csv",
