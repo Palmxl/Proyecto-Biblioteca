@@ -17,13 +17,26 @@ def main():
     print("[Actor Devolución] Escuchando tópico 'Devolucion'...")
 
     while True:
-        topic, msg_json = sub.recv_string().split(" ", 1)
-        msg = json.loads(msg_json)
-        print(f"Devolución recibida: {msg}")
-        isbn = msg["isbn"]
-        user = msg["user"]
+        msg = sub.recv_string()
 
-        data = {"op": "DEVOLVER", "isbn": isbn, "user": user}
+        # Ignora mensajes vacíos o sin contenido JSON
+        if "{" not in msg or "}" not in msg:
+            continue
+
+        # Extrae solo la parte JSON del mensaje recibido
+        try:
+            json_part = msg[msg.index("{") : msg.rindex("}") + 1]
+            data_recv = json.loads(json_part)
+        except Exception as e:
+            print(f"[WARN] Mensaje malformado recibido: {msg} ({e})")
+            continue
+
+        print(f"Devolución recibida: {data_recv}")
+        isbn = data_recv["isbn"]
+        user = data_recv["user"]
+
+        # Envía solicitud al gestor de almacenamiento
+        data = {"op": "RENOVAR", "isbn": isbn, "user": user}
         req.send_string(json.dumps(data))
         res = req.recv_json()
         print(f"Resultado: {res['msg']}")

@@ -26,4 +26,4 @@ class ReplicaManager:
     def switch(self):
         """Alterna entre la base primaria y secundaria en caso de fallo."""
         self.active = "SECONDARY" if self.active == "PRIMARY" else "PRIMARY"
-        print(f"⚠️ Conmutación realizada. Nueva BD activa: {self.active}")
+        print(f"Conmutación realizada. Nueva BD activa: {self.active}")
