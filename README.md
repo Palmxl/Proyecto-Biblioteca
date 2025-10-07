@@ -186,7 +186,7 @@ SELECT COUNT(*) FROM libros;
 ---
 
 ## 🧠 Créditos
-**Autor:** Juan Martín Sánchez Burbano  
-**Proyecto:** Biblioteca Distribuida — Sistemas Distribuidos  
+**Autores:** Juan Martín Sánchez - Juan Sebastian Tellez
+**Proyecto:** Biblioteca Sistemas Distribuidos  
 **Profesor:** M. Curiel — Pontificia Universidad Javeriana  
 **Tecnologías:** Python 3.10, ZeroMQ, Flask, Locust, MySQL  
