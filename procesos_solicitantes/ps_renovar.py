@@ -3,7 +3,7 @@ import zmq, time, json, sys
 def main(archivo):
     ctx = zmq.Context()
     socket = ctx.socket(zmq.REQ)
-    socket.connect("tcp://127.0.0.1:5555")
+    socket.connect("tcp://10.195.89.122:5555")
 
     with open(archivo, "r") as f:
         for linea in f:

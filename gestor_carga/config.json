@@ -1,13 +1,25 @@
 {
   "zmq": {
-    "gc_rep": "tcp://0.0.0.0:5555",
-    "gc_pub": "tcp://0.0.0.0:5556",
-    "actor_prestamo_rep": "tcp://127.0.0.1:5557",
-    "ga_rep": "tcp://127.0.0.1:5560"
+    "gc_rep": "tcp://10.195.89.122:5555",
+    "gc_pub": "tcp://10.195.89.122:5556",
+    "actor_prestamo_rep": "tcp://10.195.89.122:5557",
+    "ga_rep": "tcp://10.195.89.122:5560"
   },
   "mysql": {
-    "primary": { "host": "127.0.0.1", "port": 3306, "user": "root", "password": "password", "database": "biblioteca_sede1" },
-    "secondary": { "host": "127.0.0.1", "port": 3307, "user": "root", "password": "password", "database": "biblioteca_sede2" }
+    "primary": {
+      "host": "127.0.0.1",
+      "port": 3306,
+      "user": "root",
+      "password": "password",
+      "database": "biblioteca_sede1"
+    },
+    "secondary": {
+      "host": "127.0.0.1",
+      "port": 3307,
+      "user": "root",
+      "password": "password",
+      "database": "biblioteca_sede2"
+    }
   },
   "logs": {
     "gc": "../logs/gc.csv",

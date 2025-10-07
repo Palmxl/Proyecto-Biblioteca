@@ -6,7 +6,7 @@ app = Flask(__name__)
 # Configuración del socket ZMQ para comunicarse con el Gestor de Carga (GC)
 context = zmq.Context()
 socket = context.socket(zmq.REQ)
-socket.connect("tcp://127.0.0.1:5555")  # puerto REP del GC
+socket.connect("tcp://10.195.89.122:5555")  # puerto REP del GC
 
 @app.route("/")
 def home():
