@@ -10,6 +10,7 @@ ZMQ_GC_REP = CFG["zmq"]["gc_rep"]              # Solicitudes del cliente/test
 ZMQ_GC_PUB = CFG["zmq"]["gc_pub"]              # Canal para actores SUB (Renovacion / Devolucion)
 ZMQ_ACTOR_PRESTAMO_REP = CFG["zmq"]["actor_prestamo_rep"]  # Comunicación directa con el actor préstamo
 
+
 def main():
     ctx = zmq.Context()
 
@@ -29,43 +30,48 @@ def main():
     print("[GC] Esperando solicitudes...")
 
     while True:
-        # Esperar solicitud JSON del cliente o test
-        msg = rep.recv_json()
-        op = msg.get("op", "").upper()
-        print(f"[GC] Solicitud recibida: {msg}")
+        try:
+            # Esperar solicitud JSON del cliente o test
+            msg = rep.recv_json()
+            print(f"[GC] Solicitud recibida: {msg}")
 
-        # --- Operación: PRESTAR ---
-        if op == "PRESTAR":
-            # Enviar al actor préstamo y recibir respuesta
-            req_actor.send_json(msg)
-            res = req_actor.recv_json()
+            # 🔧 Compatibilidad de campo ('op', 'operacion', 'tipo')
+            op = (msg.get("op") or msg.get("operacion") or msg.get("tipo") or "").upper()
+            isbn = msg.get("isbn")
 
-            # Responder al cliente
-            rep.send_json(res)
-            print(f"[GC] Respuesta enviada al cliente: {res}")
+            # --- Operación: PRESTAR ---
+            if op == "PRESTAR":
+                req_actor.send_json(msg)
+                res = req_actor.recv_json()
 
-        # --- Operación: DEVOLUCION ---
-        elif op == "DEVOLUCION":
-            # Espera breve para asegurar conexión SUBs
-            time.sleep(1)
-            pub.send_multipart([b"Devolucion", json.dumps(msg).encode("utf-8")])
+                rep.send_json(res)
+                print(f"[GC] Respuesta enviada al cliente: {res}")
 
-            rep.send_json({"ok": True, "msg": "Devolución publicada"})
-            print("[GC] Publicada solicitud de devolución")
+            # --- Operación: DEVOLVER / DEVOLUCION ---
+            elif op in ["DEVOLVER", "DEVOLUCION"]:
+                time.sleep(0.5)
+                pub.send_multipart([b"Devolucion", json.dumps(msg).encode("utf-8")])
 
-        # --- Operación: RENOVACION ---
-        elif op == "RENOVACION":
-            # Espera breve para asegurar conexión SUBs
-            time.sleep(1)
-            pub.send_multipart([b"Renovacion", json.dumps(msg).encode("utf-8")])
+                rep.send_json({"ok": True, "msg": "Devolución publicada"})
+                print(f"[GC] Publicada solicitud de devolución ({isbn})")
 
-            rep.send_json({"ok": True, "msg": "Renovación publicada"})
-            print("[GC] Publicada solicitud de renovación")
+            # --- Operación: RENOVAR / RENOVACION ---
+            elif op in ["RENOVAR", "RENOVACION"]:
+                time.sleep(0.5)
+                pub.send_multipart([b"Renovacion", json.dumps(msg).encode("utf-8")])
 
-        # --- Operación inválida ---
-        else:
-            rep.send_json({"ok": False, "msg": "Operación inválida"})
-            print("[GC] Operación inválida recibida")
+                rep.send_json({"ok": True, "msg": "Renovación publicada"})
+                print(f"[GC] Publicada solicitud de renovación ({isbn})")
+
+            # --- Operación inválida ---
+            else:
+                rep.send_json({"ok": False, "msg": f"Operación inválida: {op}"})
+                print(f"[GC] Operación inválida recibida: {op}")
+
+        except Exception as e:
+            print(f"[GC] Error procesando solicitud: {e}")
+            rep.send_json({"ok": False, "msg": "Error interno en Gestor de Carga"})
+
 
 if __name__ == "__main__":
     main()

@@ -1,4 +1,4 @@
-import zmq, time, sys, json
+import zmq, time, json, sys
 
 def main(archivo):
     ctx = zmq.Context()
@@ -8,12 +8,20 @@ def main(archivo):
     with open(archivo, "r") as f:
         for linea in f:
             linea = linea.strip()
-            if not linea or not linea.startswith("PRESTAR"):
+            if not linea:
                 continue
-            _, isbn = linea.split(",")
-            solicitud = {"tipo": "PRESTAR", "isbn": isbn}
 
-            print(f"[PS] Solicitando préstamo de {isbn}")
+            partes = linea.split(",")
+            if len(partes) < 3:
+                continue
+
+            operacion, isbn, user = partes
+            if operacion.upper() != "PRESTAR":
+                continue
+
+            solicitud = {"operacion": "PRESTAR", "isbn": isbn, "user": user}
+
+            print(f"[PS] ({user}) Solicitando préstamo de {isbn}")
             socket.send_json(solicitud)
             respuesta = socket.recv_json()
             print(f"[PS] Respuesta: {respuesta}")

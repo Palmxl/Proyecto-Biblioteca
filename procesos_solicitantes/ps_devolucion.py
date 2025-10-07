@@ -8,12 +8,20 @@ def main(archivo):
     with open(archivo, "r") as f:
         for linea in f:
             linea = linea.strip()
-            if not linea or not linea.startswith("DEVOLVER"):
+            if not linea:
                 continue
-            _, isbn = linea.split(",")
-            solicitud = {"tipo": "DEVOLVER", "isbn": isbn}
 
-            print(f"[PS] Enviando devolución de {isbn}")
+            partes = linea.split(",")
+            if len(partes) < 3:
+                continue
+
+            operacion, isbn, user = partes
+            if operacion.upper() != "DEVOLVER":
+                continue
+
+            solicitud = {"operacion": "DEVOLVER", "isbn": isbn, "user": user}
+
+            print(f"[PS] ({user}) Devolviendo libro {isbn}")
             socket.send_json(solicitud)
             respuesta = socket.recv_json()
             print(f"[PS] Respuesta: {respuesta}")
