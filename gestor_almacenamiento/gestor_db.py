@@ -1,4 +1,3 @@
-# gestor_almacenamiento/gestor_bd.py
 import os, json
 import zmq
 from mysql.connector import Error
@@ -24,13 +23,12 @@ def main():
             conn = rm._conn()
             cur = conn.cursor()
 
+            # === PRESTAR ===
             if op == "PRESTAR":
-                # Datos de entrada
                 isbn = req["isbn"]
                 user = req["user"]
-                days = int(req.get("days", 14))  # periodo de préstamo
+                days = int(req.get("days", 14))
 
-                # 1) disponibilidad
                 cur.execute("SELECT ejemplares_total, ejemplares_disponibles FROM libros WHERE isbn=%s FOR UPDATE", (isbn,))
                 row = cur.fetchone()
                 if not row:
@@ -39,7 +37,6 @@ def main():
                 if disp <= 0:
                     cur.close(); rep.send_json(nok("Sin ejemplares disponibles")); continue
 
-                # 2) aplicar préstamo
                 cur.execute("UPDATE libros SET ejemplares_disponibles = ejemplares_disponibles - 1 WHERE isbn=%s", (isbn,))
                 cur.execute("""
                     INSERT INTO prestamos(isbn, usuario, fecha_prestamo, fecha_devolucion, renovaciones, estado)
@@ -49,18 +46,32 @@ def main():
                 cur.close()
                 rep.send_json(ok("Prestado"))
 
+                # === REPLICACIÓN ASÍNCRONA ===
+                if rm.active == "PRIMARY":
+                    try:
+                        cur2 = rm.secondary.cursor()
+                        cur2.execute("UPDATE libros SET ejemplares_disponibles = ejemplares_disponibles - 1 WHERE isbn=%s", (isbn,))
+                        cur2.execute("""
+                            INSERT INTO prestamos(isbn, usuario, fecha_prestamo, fecha_devolucion, renovaciones, estado)
+                            VALUES (%s, %s, CURDATE(), DATE_ADD(CURDATE(), INTERVAL %s DAY), 0, 'activo')
+                        """, (isbn, user, days))
+                        rm.secondary.commit()
+                        cur2.close()
+                        print("[GA] Réplica (PRESTAR) aplicada en BD secundaria.")
+                    except Exception as e:
+                        print(f"[GA] Error replicando PRESTAR en secundaria: {e}")
+
+            # === DEVOLVER ===
             elif op == "DEVOLVER":
                 isbn = req["isbn"]
                 user = req["user"]
 
-                # 1) cerrar préstamo activo
                 cur.execute("""
                     UPDATE prestamos
                     SET estado='devuelto', fecha_devolucion=CURDATE()
                     WHERE isbn=%s AND usuario=%s AND estado='activo'
                     ORDER BY id DESC LIMIT 1
                 """, (isbn, user))
-                # 2) devolver al inventario
                 cur.execute("""
                     UPDATE libros
                     SET ejemplares_disponibles = LEAST(ejemplares_total, ejemplares_disponibles + 1)
@@ -70,12 +81,33 @@ def main():
                 cur.close()
                 rep.send_json(ok("Devolución aplicada"))
 
+                # === REPLICACIÓN ASÍNCRONA ===
+                if rm.active == "PRIMARY":
+                    try:
+                        cur2 = rm.secondary.cursor()
+                        cur2.execute("""
+                            UPDATE prestamos
+                            SET estado='devuelto', fecha_devolucion=CURDATE()
+                            WHERE isbn=%s AND usuario=%s AND estado='activo'
+                            ORDER BY id DESC LIMIT 1
+                        """, (isbn, user))
+                        cur2.execute("""
+                            UPDATE libros
+                            SET ejemplares_disponibles = LEAST(ejemplares_total, ejemplares_disponibles + 1)
+                            WHERE isbn=%s
+                        """, (isbn,))
+                        rm.secondary.commit()
+                        cur2.close()
+                        print("[GA] Réplica (DEVOLVER) aplicada en BD secundaria.")
+                    except Exception as e:
+                        print(f"[GA] Error replicando DEVOLVER en secundaria: {e}")
+
+            # === RENOVAR ===
             elif op == "RENOVAR":
                 isbn = req["isbn"]
                 user = req["user"]
                 days = int(req.get("days", 7))
 
-                # 1) validar límite de renovaciones
                 cur.execute("""
                     SELECT id, renovaciones FROM prestamos
                     WHERE isbn=%s AND usuario=%s AND estado='activo'
@@ -88,7 +120,6 @@ def main():
                 if ren >= 2:
                     cur.close(); rep.send_json(nok("Límite de 2 renovaciones alcanzado")); continue
 
-                # 2) aplicar renovación
                 cur.execute("""
                     UPDATE prestamos
                     SET fecha_devolucion = DATE_ADD(fecha_devolucion, INTERVAL %s DAY),
@@ -98,6 +129,23 @@ def main():
                 conn.commit()
                 cur.close()
                 rep.send_json(ok("Renovación aplicada"))
+
+                # === REPLICACIÓN ASÍNCRONA ===
+                if rm.active == "PRIMARY":
+                    try:
+                        cur2 = rm.secondary.cursor()
+                        cur2.execute("""
+                            UPDATE prestamos
+                            SET fecha_devolucion = DATE_ADD(fecha_devolucion, INTERVAL %s DAY),
+                                renovaciones = renovaciones + 1
+                            WHERE isbn=%s AND usuario=%s AND estado='activo'
+                            ORDER BY id DESC LIMIT 1
+                        """, (days, isbn, user))
+                        rm.secondary.commit()
+                        cur2.close()
+                        print("[GA] Réplica (RENOVAR) aplicada en BD secundaria.")
+                    except Exception as e:
+                        print(f"[GA] Error replicando RENOVAR en secundaria: {e}")
 
             else:
                 cur.close()
