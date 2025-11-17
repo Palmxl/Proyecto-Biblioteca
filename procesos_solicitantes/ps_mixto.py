@@ -1,9 +1,22 @@
-import zmq, time, json, sys
+import zmq, time, json, sys, os
+
+# Cargar config del GC
+CONFIG_PATH = os.path.join(
+    os.path.dirname(__file__), 
+    "..", 
+    "gestor_carga", 
+    "config.json"
+)
+
+with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+    CFG = json.load(f)
+
+GC_ENDPOINT = CFG["zmq"]["gc_rep"]   # tcp://10.43.103.174:5555
 
 def main(archivo):
     ctx = zmq.Context()
     socket = ctx.socket(zmq.REQ)
-    socket.connect("tcp://192.168.1.65:5555")
+    socket.connect(GC_ENDPOINT)
 
     with open(archivo, "r") as f:
         for linea in f:
@@ -18,7 +31,6 @@ def main(archivo):
             operacion, isbn, user = partes
             operacion = operacion.upper()
 
-            # Validar operación
             if operacion not in ["PRESTAR", "DEVOLVER", "RENOVAR"]:
                 print(f"[PS] Operación desconocida '{operacion}', se ignora.")
                 continue
