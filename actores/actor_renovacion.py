@@ -7,39 +7,43 @@ GC_PUB = CFG["zmq"]["gc_pub"]
 
 def main():
     ctx = zmq.Context()
+
+    # SUB para escuchar al Gestor de Carga
     sub = ctx.socket(zmq.SUB)
     sub.connect(GC_PUB)
     sub.setsockopt_string(zmq.SUBSCRIBE, "Renovacion")
 
+    # REQ hacia el Gestor de Almacenamiento
     req = ctx.socket(zmq.REQ)
     req.connect(GA_REP)
 
     print("[Actor Renovación] Escuchando tópico 'Renovacion'...")
 
     while True:
-        msg = sub.recv_string()
+        # Recibir MULTIPART: [topic, payload_json]
+        topic, payload = sub.recv_multipart()
 
-        # Ignora mensajes vacíos o sin contenido JSON
-        if "{" not in msg or "}" not in msg:
-            continue
-
-        # Extrae solo la parte JSON del mensaje recibido
         try:
-            json_part = msg[msg.index("{") : msg.rindex("}") + 1]
-            data_recv = json.loads(json_part)
+            data_recv = json.loads(payload.decode("utf-8"))
         except Exception as e:
-            print(f"[WARN] Mensaje malformado recibido: {msg} ({e})")
+            print(f"[Actor Renovación][WARN] Payload malformado: {payload} ({e})")
             continue
 
-        print(f"Renovación recibida: {data_recv}")
-        isbn = data_recv["isbn"]
-        user = data_recv["user"]
+        print(f"[Actor Renovación] Mensaje recibido: {data_recv}")
 
-        # Envía solicitud al gestor de almacenamiento
+        isbn = data_recv.get("isbn")
+        user = data_recv.get("user")
+
+        if not isbn or not user:
+            print("[Actor Renovación][WARN] Mensaje sin isbn/user, se ignora.")
+            continue
+
+        # Enviar solicitud de RENOVAR al GA
         data = {"op": "RENOVAR", "isbn": isbn, "user": user}
-        req.send_string(json.dumps(data))
+        req.send_json(data)
         res = req.recv_json()
-        print(f"Resultado: {res['msg']}")
+
+        print(f"[Actor Renovación] Resultado GA: {res.get('msg', res)}")
 
 if __name__ == "__main__":
     main()

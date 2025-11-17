@@ -16,19 +16,29 @@ def main(archivo):
                 continue
 
             operacion, isbn, user = partes
-            if operacion.upper() != "DEVOLVER":
+            operacion = operacion.upper()
+
+            # Validar operación
+            if operacion not in ["PRESTAR", "DEVOLVER", "RENOVAR"]:
+                print(f"[PS] Operación desconocida '{operacion}', se ignora.")
                 continue
 
-            solicitud = {"operacion": "DEVOLVER", "isbn": isbn, "user": user}
+            solicitud = {
+                "operacion": operacion,
+                "isbn": isbn,
+                "user": user
+            }
 
-            print(f"[PS] ({user}) Devolviendo libro {isbn}")
+            print(f"[PS] ({user}) Enviando {operacion} para libro {isbn}")
             socket.send_json(solicitud)
+
             respuesta = socket.recv_json()
-            print(f"[PS] Respuesta: {respuesta}")
+            print(f"[PS] Respuesta: {respuesta}\n")
+
             time.sleep(0.3)
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Uso: python -m procesos_solicitantes.ps_devolver archivo.txt")
+        print("Uso: python ps_mixto.py archivo_solicitudes.txt")
     else:
         main(sys.argv[1])
