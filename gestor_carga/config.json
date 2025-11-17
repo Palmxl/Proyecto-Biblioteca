@@ -9,18 +9,18 @@
   },
   "mysql": {
     "primary": {
+      "host": "127.0.0.1",
+      "port": 3306,
+      "user": "root",
+      "password": "NuevaClave123!",
+      "database": "biblioteca_sede1"
+    },
+    "secondary": {
       "host": "192.168.1.65",
       "port": 3306,
       "user": "root",
       "password": "password",
       "database": "biblioteca_sede2"
-    },
-    "secondary": {
-      "host": "192.168.0.3",
-      "port": 3306,
-      "user": "root",
-      "password": "password",
-      "database": "biblioteca_sede1"
     }
   },
   "logs": {
