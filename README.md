@@ -116,33 +116,102 @@ pip install pyzmq flask locust
 
 ---
 
-## ⚙️ Ejecución del sistema distribuido
+# 📘 Ejecución del Sistema Distribuido (3 Máquinas)
 
-Abre 6 terminales y ejecuta en orden:
+Estas son las instrucciones oficiales para **ejecutar el sistema distribuido completo** en las tres máquinas.  
+No incluye casos de prueba ni explicación de resiliencia, solo **cómo correr cada componente**.
 
-### 🧱 1. Gestor de Almacenamiento (GA)
-```bash
-python3 -m gestor_almacenamiento.gestor_db
-```
+---
 
-### ⚙️ 2. Gestor de Carga (GC)
+# 🖥️ MÁQUINA 1 – Sede 1 (VM 10.43.103.174)
+
+### ▶️ Gestor de Carga (GC – Sede 1)
 ```bash
 python3 -m gestor_carga.gestor_carga
 ```
 
-### 🎭 3. Actores
+### ▶️ Actores de Sede 1
+
+**Actor Préstamo**
 ```bash
 python3 -m actores.actor_prestamo
+```
+
+**Actor Devolución**
+```bash
 python3 -m actores.actor_devolucion
+```
+
+**Actor Renovación**
+```bash
 python3 -m actores.actor_renovacion
 ```
 
-### 👥 4. Procesos Solicitantes (PS)
+### ▶️ Proceso Solicitante (PS mixto)
 ```bash
-python3 -m procesos_solicitantes.ps_prestar solicitudes/solicitudes_ps1.txt
-python3 -m procesos_solicitantes.ps_devolver solicitudes/solicitudes_ps2.txt
-python3 -m procesos_solicitantes.ps_renovar solicitudes/solicitudes_ps3.txt
+python3 procesos_solicitantes/ps_mixto.py solicitudes/solicitudes_mixto2.txt
 ```
+
+---
+
+# 🖥️ MÁQUINA 2 – Sede 1 (192.168.0.3)
+
+### ▶️ Gestor de Almacenamiento (GA1)
+```bash
+python3 -m gestor_almacenamiento.gestor_db
+```
+
+**Base de datos requerida:**
+- MySQL en `127.0.0.1:3306`
+- BD `biblioteca_sede1`
+
+---
+
+# 🖥️ MÁQUINA 3 – Sede 2 (192.168.1.65)
+
+### ▶️ Gestor de Almacenamiento (GA2)
+```bash
+python3 -m gestor_almacenamiento.gestor_db
+```
+
+### ▶️ Actores de Sede 2
+
+**Actor Préstamo**
+```bash
+python3 -m actores.actor_prestamo
+```
+
+**Actor Devolución**
+```bash
+python3 -m actores.actor_devolucion
+```
+
+**Actor Renovación**
+```bash
+python3 -m actores.actor_renovacion
+```
+
+### ▶️ (Opcional) Gestor de Carga Sede 2
+```bash
+python3 -m gestor_carga.gestor_carga
+```
+
+---
+
+# ✔️ Resumen
+
+### Máquina 1
+- GC1  
+- Actores Sede 1  
+- PS mixto  
+
+### Máquina 2
+- GA1 + MySQL primaria  
+
+### Máquina 3
+- GA2 + MySQL secundaria  
+- Actores Sede 2  
+- (Opcional) GC2  
 
 ---
 
