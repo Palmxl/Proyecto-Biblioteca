@@ -1,19 +1,19 @@
 {
   "zmq": {
-    "gc_rep": "tcp://192.168.1.65:5555",
-    "gc_pub": "tcp://192.168.1.65:5556",
+    "gc_rep": "tcp://10.43.103.200:5555",
+    "gc_pub": "tcp://10.43.103.200:5556",
 
-    "actor_prestamo_rep": "tcp://192.168.1.65:5557",
+    "actor_prestamo_rep": "tcp://10.43.103.200:5557",
 
-    "ga_rep": "tcp://192.168.1.65:5560",
+    "ga_rep": "tcp://10.43.103.200:5560",
 
-    "ga_rep_primary": "tcp://192.168.0.3:5560",    
-    "ga_rep_secondary": "tcp://192.168.1.65:5560" 
+    "ga_rep_primary": "tcp://192.168.0.3:5560",
+    "ga_rep_secondary": "tcp://10.43.103.200:5560"
   },
 
   "mysql": {
     "primary": {
-      "host": "192.168.1.65",
+      "host": "10.43.103.200",
       "port": 3306,
       "user": "root",
       "password": "password",
