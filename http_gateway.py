@@ -3,42 +3,56 @@ import zmq, json
 
 app = Flask(__name__)
 
-# Configuración del socket ZMQ para comunicarse con el Gestor de Carga (GC)
+# Contexto global, sockets por request
 context = zmq.Context()
-socket = context.socket(zmq.REQ)
-socket.connect("tcp://10.195.89.122:5555")  # puerto REP del GC
+GC_ENDPOINT = "tcp://10.195.89.122:5555"  # REP del GC que quieras probar
+
 
 @app.route("/")
 def home():
     return jsonify({"msg": "🚀 Gateway Biblioteca Distribuida activo"})
 
-# -----------------------
-#   ENDPOINTS REST
-# -----------------------
+
+def call_gc(payload: dict):
+    """Helper: abre un REQ, manda al GC y devuelve la respuesta."""
+    socket = context.socket(zmq.REQ)
+    socket.connect(GC_ENDPOINT)
+
+    try:
+        socket.send_json(payload)
+        reply = socket.recv_json()
+        return reply
+    except Exception as e:
+        print(f"[Gateway] Error hablando con GC: {e}")
+        return {"ok": False, "msg": "Error interno en gateway"}
+    finally:
+        socket.close()
+
 
 @app.route("/prestamo", methods=["POST"])
 def prestar():
     data = request.get_json(force=True)
     data["operacion"] = "PRESTAR"
-    socket.send_json(data)
-    reply = socket.recv_json()
+    reply = call_gc(data)
     return jsonify(reply)
+
 
 @app.route("/devolucion", methods=["POST"])
 def devolver():
     data = request.get_json(force=True)
     data["operacion"] = "DEVOLVER"
-    socket.send_json(data)
-    reply = socket.recv_json()
+    reply = call_gc(data)
     return jsonify(reply)
+
 
 @app.route("/renovacion", methods=["POST"])
 def renovar():
     data = request.get_json(force=True)
     data["operacion"] = "RENOVAR"
-    socket.send_json(data)
-    reply = socket.recv_json()
+    reply = call_gc(data)
     return jsonify(reply)
 
+
 if __name__ == "__main__":
+    # host 0.0.0.0 para que Locust desde otra máquina pueda pegarle
     app.run(host="0.0.0.0", port=8080)
