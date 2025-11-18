@@ -4,12 +4,17 @@
 ---
 
 ## 🧠 Descripción general
-El sistema **Biblioteca Distribuida** implementa un entorno **cliente-servidor distribuido** para gestionar operaciones de biblioteca (📖 *préstamo*, ♻️ *renovación*, 🔁 *devolución*), comunicándose mediante **ZeroMQ** con un **Gestor de Carga (GC)**, **Gestores de Almacenamiento (GA)** y **Actores especializados**.  
+El sistema **Biblioteca Distribuida** implementa un entorno **cliente-servidor distribuido** para la gestión de operaciones de biblioteca:  
+- 📖 *Préstamo*  
+- ♻️ *Renovación*  
+- 🔁 *Devolución*  
 
-Incluye:
-- Comunicación asíncrona entre componentes (REQ/REP, PUB/SUB).  
-- Replicación de base de datos entre sedes.  
-- Integración con **Locust + Flask Gateway** para pruebas de carga HTTP.  
+El proyecto utiliza **ZeroMQ** como middleware para comunicación distribuida, con soporte para:
+- Patrones **REQ/REP** (operaciones síncronas),
+- Patrones **PUB/SUB** (difusión de eventos),
+- Replicación de datos entre sedes mediante un **Gestor de Almacenamiento (GA) primario/secundario**,  
+- Mecanismos de failover automatizados,
+- Un **gateway HTTP** para integrar pruebas de carga con **Locust**.
 
 ---
 
@@ -48,6 +53,7 @@ Incluye:
 ---
 
 ## 📦 Estructura del proyecto
+
 ```
 Proyecto-Biblioteca/
 │
@@ -62,30 +68,24 @@ Proyecto-Biblioteca/
 │
 ├── gestor_almacenamiento/
 │   ├── gestor_db.py
-│   ├── biblioteca.db / conexión MySQL
+│   ├── replica_manager.py
 │
 ├── procesos_solicitantes/
-│   ├── ps_prestar.py
-│   ├── ps_devolver.py
-│   ├── ps_renovar.py
+│   ├── ps_mixto.py
 │
 ├── solicitudes/
-│   ├── solicitudes_ps1.txt
-│   ├── solicitudes_ps2.txt
-│   └── solicitudes_ps3.txt
+│   ├── solicitudes_mixto1.txt
+│   └── solicitudes_mixto2.txt
 │
-├── gateway/
-│   ├── http_gateway.py
-│   ├── locustfile.py
-│
-├── generar_solicitudes.py
 ├── requirements.txt
+├── http_gateway.py
+├── locustfile.py
 └── README.md
 ```
 
 ---
 
-## 🐍 Instalación del entorno virtual (Python 3.10+)
+# 🐍 Instalación del entorno virtual (Python 3.10+)
 
 ### 1️⃣ Crear entorno
 ```bash
@@ -109,17 +109,16 @@ venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Si no tienes el archivo `requirements.txt`, puedes instalar manualmente:
+Si no existe, instala manualmente:
 ```bash
-pip install pyzmq flask locust
+pip install pyzmq mysql-connector-python flask locust
 ```
 
 ---
 
 # 📘 Ejecución del Sistema Distribuido (3 Máquinas)
 
-Estas son las instrucciones oficiales para **ejecutar el sistema distribuido completo** en las tres máquinas.  
-No incluye casos de prueba ni explicación de resiliencia, solo **cómo correr cada componente**.
+Estas instrucciones describen **únicamente** cómo ejecutar cada componente en las tres máquinas del sistema distribuido.
 
 ---
 
@@ -131,131 +130,75 @@ python3 -m gestor_carga.gestor_carga
 ```
 
 ### ▶️ Actores de Sede 1
-
-**Actor Préstamo**
 ```bash
 python3 -m actores.actor_prestamo
-```
-
-**Actor Devolución**
-```bash
 python3 -m actores.actor_devolucion
-```
-
-**Actor Renovación**
-```bash
 python3 -m actores.actor_renovacion
 ```
 
 ### ▶️ Proceso Solicitante (PS mixto)
 ```bash
-python3 procesos_solicitantes/ps_mixto.py solicitudes/solicitudes_mixto2.txt
+python3 procesos_solicitantes/ps_mixto.py solicitudes/solicitudes_mixto1.txt
 ```
 
 ---
 
 # 🖥️ MÁQUINA 2 – Sede 1 (192.168.0.3)
 
-### ▶️ Gestor de Almacenamiento (GA1)
+### ▶️ Gestor de Almacenamiento — BD primaria
 ```bash
 python3 -m gestor_almacenamiento.gestor_db
 ```
 
-**Base de datos requerida:**
-- MySQL en `127.0.0.1:3306`
+**Requisitos de la BD primaria:**
+- MySQL activo en `127.0.0.1:3306`
 - BD `biblioteca_sede1`
 
 ---
 
 # 🖥️ MÁQUINA 3 – Sede 2 (192.168.1.65)
 
-### ▶️ Gestor de Almacenamiento (GA2)
+### ▶️ Gestor de Almacenamiento — BD secundaria
 ```bash
 python3 -m gestor_almacenamiento.gestor_db
 ```
 
 ### ▶️ Actores de Sede 2
-
-**Actor Préstamo**
 ```bash
 python3 -m actores.actor_prestamo
-```
-
-**Actor Devolución**
-```bash
 python3 -m actores.actor_devolucion
-```
-
-**Actor Renovación**
-```bash
 python3 -m actores.actor_renovacion
 ```
 
-### ▶️ (Opcional) Gestor de Carga Sede 2
+### ▶️ (Opcional) Segundo Gestor de Carga
 ```bash
 python3 -m gestor_carga.gestor_carga
 ```
 
 ---
 
-# ✔️ Resumen
+# 🌐 Gateway HTTP + Locust (Pruebas de carga)
 
-### Máquina 1
-- GC1  
-- Actores Sede 1  
-- PS mixto  
-
-### Máquina 2
-- GA1 + MySQL primaria  
-
-### Máquina 3
-- GA2 + MySQL secundaria  
-- Actores Sede 2  
-- (Opcional) GC2  
-
----
-
-## 🌐 Gateway HTTP + Locust (pruebas de carga)
-
-### 🧩 1. Iniciar el gateway
+### 1️⃣ Iniciar gateway HTTP → GC
 ```bash
 python3 http_gateway.py
 ```
 
-### ⚡ 2. Iniciar Locust
+### 2️⃣ Ejecutar Locust
 ```bash
-locust -f locustfile.py --host http://127.0.0.1:8080
+locust -f locustfile.py
 ```
 
-Abre el panel en tu navegador:
+Panel de control:
 ```
 http://localhost:8089
 ```
 
 ---
 
-## 📊 Métricas sugeridas
+# 🧠 Créditos
 
-| Prueba | Usuarios | Operaciones | Tiempo medio (ms) | Éxito (%) |
-|---------|-----------|--------------|------------------|------------|
-| Funcional (manual) | 1 | 10 | <100 | 100 |
-| Carga moderada | 10 | 100 | <200 | 100 |
-| Alta concurrencia | 50 | 1000 | <300 | 95 |
-| Réplica entre sedes | 10/10 | 500 | <400 | 98 |
-
----
-
-## 🧪 Consultas MySQL útiles
-```sql
-SELECT isbn, titulo, usuario FROM libros WHERE usuario IS NULL;
-SELECT isbn, usuario FROM libros WHERE usuario IS NOT NULL;
-SELECT COUNT(*) FROM libros;
-```
-
----
-
-## 🧠 Créditos
-**Autores:** Juan Martín Sánchez - Juan Sebastian Tellez
-**Proyecto:** Biblioteca Sistemas Distribuidos  
+**Autores:** Juan Martín Sánchez – Juan Sebastián Téllez  
+**Proyecto:** Biblioteca Distribuida — Sistemas Distribuidos  
 **Profesor:** M. Curiel — Pontificia Universidad Javeriana  
-**Tecnologías:** Python 3.10, ZeroMQ, Flask, Locust, MySQL  
+**Tecnologías:** Python 3.10, ZeroMQ, MySQL, Flask, Locust  
