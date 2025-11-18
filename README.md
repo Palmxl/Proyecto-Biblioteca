@@ -219,12 +219,12 @@ python3 -m gestor_carga.gestor_carga
 
 ### 🧩 1. Iniciar el gateway
 ```bash
-python3 gateway/http_gateway.py
+python3 http_gateway.py
 ```
 
 ### ⚡ 2. Iniciar Locust
 ```bash
-locust -f gateway/locustfile.py --host http://127.0.0.1:8080
+locust -f locustfile.py --host http://127.0.0.1:8080
 ```
 
 Abre el panel en tu navegador:
