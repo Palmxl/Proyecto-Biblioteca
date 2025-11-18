@@ -5,7 +5,7 @@ app = Flask(__name__)
 
 # Contexto global, sockets por request
 context = zmq.Context()
-GC_ENDPOINT = "tcp://10.195.89.122:5555"  # REP del GC que quieras probar
+GC_ENDPOINT = "tcp://10.43.103.200:5555"  # REP del GC que quieras probar
 
 
 @app.route("/")
