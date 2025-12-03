@@ -3,7 +3,7 @@ import zmq, time, json, sys
 def main(archivo):
     ctx = zmq.Context()
     socket = ctx.socket(zmq.REQ)
-    socket.connect("tcp://10.195.89.122:5555")
+    socket.connect("tcp://192.168.1.65:5555")
 
     with open(archivo, "r") as f:
         for linea in f:
@@ -16,12 +16,12 @@ def main(archivo):
                 continue
 
             operacion, isbn, user = partes
-            if operacion.upper() != "RENOVAR":
+            if operacion.upper() != "DEVOLVER":
                 continue
 
-            solicitud = {"operacion": "RENOVAR", "isbn": isbn, "user": user}
+            solicitud = {"operacion": "DEVOLVER", "isbn": isbn, "user": user}
 
-            print(f"[PS] ({user}) Solicitando renovación de {isbn}")
+            print(f"[PS] ({user}) Devolviendo libro {isbn}")
             socket.send_json(solicitud)
             respuesta = socket.recv_json()
             print(f"[PS] Respuesta: {respuesta}")
@@ -29,6 +29,6 @@ def main(archivo):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Uso: python -m procesos_solicitantes.ps_renovar archivo.txt")
+        print("Uso: python -m procesos_solicitantes.ps_devolver archivo.txt")
     else:
         main(sys.argv[1])

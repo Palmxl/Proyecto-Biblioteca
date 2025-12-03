@@ -16,12 +16,12 @@ def main(archivo):
                 continue
 
             operacion, isbn, user = partes
-            if operacion.upper() != "RENOVAR":
+            if operacion.upper() != "PRESTAR":
                 continue
 
-            solicitud = {"operacion": "RENOVAR", "isbn": isbn, "user": user}
+            solicitud = {"operacion": "PRESTAR", "isbn": isbn, "user": user}
 
-            print(f"[PS] ({user}) Solicitando renovación de {isbn}")
+            print(f"[PS] ({user}) Solicitando préstamo de {isbn}")
             socket.send_json(solicitud)
             respuesta = socket.recv_json()
             print(f"[PS] Respuesta: {respuesta}")
@@ -29,6 +29,6 @@ def main(archivo):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Uso: python -m procesos_solicitantes.ps_renovar archivo.txt")
+        print("Uso: python -m procesos_solicitantes.ps_prestar archivo.txt")
     else:
         main(sys.argv[1])

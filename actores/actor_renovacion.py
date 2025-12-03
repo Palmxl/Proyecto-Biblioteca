@@ -11,13 +11,13 @@ def main():
     # SUB para escuchar al Gestor de Carga
     sub = ctx.socket(zmq.SUB)
     sub.connect(GC_PUB)
-    sub.setsockopt_string(zmq.SUBSCRIBE, "Devolucion")
+    sub.setsockopt_string(zmq.SUBSCRIBE, "Renovacion")
 
     # REQ hacia el Gestor de Almacenamiento
     req = ctx.socket(zmq.REQ)
     req.connect(GA_REP)
 
-    print("[Actor Devolución] Escuchando tópico 'Devolucion'...")
+    print("[Actor Renovación] Escuchando tópico 'Renovacion'...")
 
     while True:
         # Recibir MULTIPART: [topic, payload_json]
@@ -26,24 +26,24 @@ def main():
         try:
             data_recv = json.loads(payload.decode("utf-8"))
         except Exception as e:
-            print(f"[Actor Devolución][WARN] Payload malformado: {payload} ({e})")
+            print(f"[Actor Renovación][WARN] Payload malformado: {payload} ({e})")
             continue
 
-        print(f"[Actor Devolución] Mensaje recibido: {data_recv}")
+        print(f"[Actor Renovación] Mensaje recibido: {data_recv}")
 
         isbn = data_recv.get("isbn")
         user = data_recv.get("user")
 
         if not isbn or not user:
-            print("[Actor Devolución][WARN] Mensaje sin isbn/user, se ignora.")
+            print("[Actor Renovación][WARN] Mensaje sin isbn/user, se ignora.")
             continue
 
-        # Enviar solicitud de DEVOLVER al GA
-        data = {"op": "DEVOLVER", "isbn": isbn, "user": user}
+        # Enviar solicitud de RENOVAR al GA
+        data = {"op": "RENOVAR", "isbn": isbn, "user": user}
         req.send_json(data)
         res = req.recv_json()
 
-        print(f"[Actor Devolución] Resultado GA: {res.get('msg', res)}")
+        print(f"[Actor Renovación] Resultado GA: {res.get('msg', res)}")
 
 if __name__ == "__main__":
     main()
